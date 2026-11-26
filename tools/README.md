@@ -29,6 +29,17 @@ Run them from the repository folder in PowerShell.
 ```
 .blend files, exports and backups are never committed (see `.gitignore`).
 
+## Starting from SketchUp (optional)
+Blender 5.x cannot open `.skp` or import COLLADA (`.dae`). In SketchUp use **File › Export › 3D Model › FBX**
+(Options: tick *Export texture maps*, units *Meters*), then:
+```powershell
+& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --factory-startup --python-exit-code 1 --python tools\blender\import_model.py -- --input "D:\INFINIVIZ\Nimesh Bedroom\Nimesh.fbx" --out "D:\INFINIVIZ\Nimesh Bedroom\Nimesh Bedroom.blend" --d5-meta "D:\DESKTOP\nimesh bedroom 360\D5VirtualTour_25780a\_Resource\meta.json"
+```
+It reports size, triangles, materials and missing textures, packs textures, and adds an editable daylight setup.
+With `--d5-meta` it places cameras at the real D5 tour positions, but only if they all land inside the room.
+Add `--camera-map '{"9":"CAM_01_Bed", ...}'` to name them directly. It never overwrites an existing .blend.
+Open the result in Blender, check the cameras and lighting, then run `export.ps1`.
+
 ## Preparing a Blender project
 1. **Cameras:** create one camera per viewpoint, named exactly as in the project config. For Nimesh Bedroom:
    `CAM_01_Bed`, `CAM_02_Entrance`, `CAM_03_Wardrobe`, `CAM_04_TV_Unit`, `CAM_05_Window`, `CAM_06_Seating`,
