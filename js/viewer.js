@@ -12,8 +12,9 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { createVillaWorld, hasWebGL } from './villa.js';
+import { createVillaWorld } from './villa.js';
 import { CONFIG } from './config.js';
+import { webglSupport, showViewerFallback, createRenderer } from './viewer-fallback.js';
 
 const VIEWS = {
   front:      { pos: [7, 5.5, 34],   target: [1.5, 3, 0] },
@@ -28,19 +29,25 @@ const angleLerp = (a, b, t) => { let d = ((b - a + Math.PI) % (Math.PI * 2)) - M
 export function initViewer(root) {
   const $ = (s) => root.querySelector(s);
   const $$ = (s) => [...root.querySelectorAll(s)];
-  const fallback = (msg) => {
-    if (msg) { const p = $('[data-fallback-msg]'); if (p) p.textContent = msg; }
-    root.classList.add('is-fallback');
-  };
-  if (!hasWebGL()) return fallback();
+  const fallback = (reason, detail) => showViewerFallback(root, reason, detail);
+  if (!webglSupport()) return fallback('no-webgl');
 
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    renderer = createRenderer(THREE, { antialias: false });
   } catch (e) {
-    console.warn('WebGL renderer unavailable:', e);
-    return fallback();
+    return fallback('renderer', e?.message || e);
   }
+  try {
+    return startScene(root, renderer, $, $$, fallback);
+  } catch (e) {
+    // Never leave a half-built viewer: release the GPU context and show the real error.
+    try { renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); } catch { /* ignore */ }
+    return fallback('init', e?.message || e);
+  }
+}
+
+function startScene(root, renderer, $, $$, fallback) {
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const small = matchMedia('(max-width: 700px)').matches;
   const hq = !small && (navigator.hardwareConcurrency || 4) >= 4;
@@ -63,13 +70,20 @@ export function initViewer(root) {
   const camera = new THREE.PerspectiveCamera(small ? 42 : 36, 1, 0.08, 4000);
   camera.rotation.order = 'YXZ';
 
-  // ---------- Post-processing (HDR + bloom) ----------
-  const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: hq ? 4 : 0 });
-  const composer = new EffectComposer(renderer, rt);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), world.bloomRef.strength, 0.55, 0.82);
-  composer.addPass(bloom);
-  composer.addPass(new OutputPass());
+  // ---------- Post-processing (HDR + bloom) — only where the GPU can render to half-float targets ----------
+  const canHDR = renderer.capabilities.isWebGL2 &&
+    (renderer.extensions.has('EXT_color_buffer_half_float') || renderer.extensions.has('EXT_color_buffer_float'));
+  let composer = null, bloom = null;
+  if (canHDR) {
+    const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: hq ? 4 : 0 });
+    composer = new EffectComposer(renderer, rt);
+    composer.addPass(new RenderPass(scene, camera));
+    bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), world.bloomRef.strength, 0.55, 0.82);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+  } else {
+    console.info('[INFINIVIZ] HDR post-processing not supported on this GPU; rendering directly.');
+  }
 
   // ---------- Orbit controls ----------
   const controls = new OrbitControls(camera, canvas);
@@ -110,9 +124,11 @@ export function initViewer(root) {
     const w = root.clientWidth, h = root.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
-    composer.setPixelRatio(pixelRatio);
-    composer.setSize(w, h);
-    bloom.resolution.set(w, h);
+    if (composer) {
+      composer.setPixelRatio(pixelRatio);
+      composer.setSize(w, h);
+      bloom.resolution.set(w, h);
+    }
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     if (firstSize) { camera.position.copy(viewPos(VIEWS.front)); controls.update(); firstSize = false; }
@@ -338,7 +354,10 @@ export function initViewer(root) {
 
   // ---------- Render loop (only while visible) ----------
   let visible = false, raf = 0, last = performance.now(), idleFrames = 0;
-  const renderNow = () => { bloom.strength = world.bloomRef.strength; composer.render(); };
+  const renderNow = () => {
+    if (composer) { bloom.strength = world.bloomRef.strength; composer.render(); }
+    else renderer.render(scene, camera);
+  };
   const clock = () => {
     raf = requestAnimationFrame(clock);
     const now = performance.now();
@@ -373,10 +392,21 @@ export function initViewer(root) {
 
   canvas.addEventListener('webglcontextlost', (e) => {
     e.preventDefault(); setRunning(false);
-    fallback('The 3D view was paused by your browser to save memory. Reload the page to explore again.');
+    fallback('lost');
   });
 
-  renderNow();
+  // First frame: if the HDR path fails on this GPU, drop to direct rendering instead of giving up.
+  try { renderNow(); }
+  catch (e) {
+    if (!composer) throw e;
+    console.warn('[INFINIVIZ] HDR post-processing failed on this GPU, using direct rendering:', e?.message || e);
+    composer = null; bloom = null;
+    renderNow();
+  }
+  const glErr = renderer.getContext().getError();
+  if (glErr && renderer.getContext().isContextLost()) throw new Error(`WebGL context lost during first frame (error ${glErr})`);
   root.classList.add('is-ready');
+  root.dataset.status = 'ready';
+  root.dataset.renderPath = composer ? 'hdr-bloom' : 'direct';
   if (root.dataset.autostart === 'walk') { delete root.dataset.autostart; activate(); enterWalk('living'); }
 }

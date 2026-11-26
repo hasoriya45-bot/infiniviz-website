@@ -33,6 +33,12 @@ foreach ($page in 'index.html', 'project.html', '404.html') {
     if (-not (Test-Path (Join-Path $repo $ref))) { $fail.Add("$page links to missing file: $ref") }
   }
 }
+foreach ($page in 'index.html', 'project.html') {
+  $html = [IO.File]::ReadAllText((Join-Path $repo $page))
+  foreach ($m in [regex]::Matches($html, '(?:<script[^>]+src|"(?:three[^"]*|three-mesh-bvh)")\s*[=:]\s*"(https?://[^"]+)"')) {
+    $fail.Add("$page loads a script from a third-party CDN ($($m.Groups[1].Value)); use vendor/ so blocked CDNs cannot break the site")
+  }
+}
 Get-ChildItem $repo -Recurse -Filter *.json -File | Where-Object { $_.FullName -notmatch '\\(\.git|tools\\node_modules)\\' } | ForEach-Object {
   try { $null = Read-JsonFile $_.FullName } catch { $fail.Add("invalid JSON: $($_.FullName.Substring($repo.Length + 1))") }
 }

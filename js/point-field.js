@@ -3,11 +3,12 @@
  * container (the contact section) and rendered only while it is on screen.
  */
 import * as THREE from 'three';
+import { createRenderer } from './viewer-fallback.js';
 
 export function initPointField(container) {
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: 'low-power' });
+    renderer = createRenderer(THREE, { alpha: true, antialias: false, powerPreference: 'low-power' });
   } catch { return; }
   const canvas = renderer.domElement;
   container.appendChild(canvas);

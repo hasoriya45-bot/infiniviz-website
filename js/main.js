@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { PROJECTS, CATEGORIES, EXPERIENCES, imgSrc, imgSrcset } from './projects.js';
+import { showViewerFallback, classifyLoadError } from './viewer-fallback.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -281,18 +282,15 @@ function initViewerLazy() {
       if (manifest) {
         try { return await (await import('./project-viewer.js')).initProjectViewer(el, manifest); }
         catch (err) {
-          console.warn('Project viewer could not load:', err);
+          console.warn('[INFINIVIZ] Project viewer could not load:', err);
           if (!el.classList.contains('is-project')) return loadVilla();
-          el.classList.add('is-fallback');
-          el.dataset.status = 'error';
+          showViewerFallback(el, classifyLoadError(err), err?.message || err);
           return null;
         }
       }
       return loadVilla();
     })().catch((err) => {
-      console.warn('3D viewer could not load:', err);
-      el.classList.add('is-fallback');
-      el.dataset.status = 'error';
+      showViewerFallback(el, classifyLoadError(err), err?.message || err);
     });
     return started;
   };
@@ -340,7 +338,7 @@ async function runSelftest() {
       res.viewer.collision.problems.forEach((p) => fail(`collision: ${p}`));
       res.viewer.model = api.status.model;
     } else {
-      res.viewer = { kind: 'concept-villa', status: el.classList.contains('is-ready') ? 'ready' : (el.classList.contains('is-fallback') ? 'fallback' : 'not ready'), views: 0, panoramasLoaded: 0 };
+      res.viewer = { kind: 'concept-villa', status: el.classList.contains('is-ready') ? 'ready' : (el.classList.contains('is-fallback') ? 'fallback' : 'not ready'), views: 0, panoramasLoaded: 0, reason: el.dataset.reason, detail: el.dataset.detail, renderPath: el.dataset.renderPath };
       if (res.viewer.status !== 'ready') fail(`concept villa viewer: ${res.viewer.status}`);
     }
   } catch (e) { fail(`self-test crashed: ${e.message || e}`); }

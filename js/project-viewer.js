@@ -15,8 +15,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { MeshBVH } from 'three-mesh-bvh';
+import { webglSupport, showViewerFallback, createRenderer } from './viewer-fallback.js';
 
-const DRACO_PATH = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/';
+const DRACO_PATH = new URL('vendor/three/examples/jsm/libs/draco/gltf/', document.baseURI).href;
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -36,6 +37,10 @@ export async function initProjectViewer(root, manifestUrl) {
     if (!r.ok) throw new Error(`manifest ${r.status}`);
     return r.json();
   });
+  if (!webglSupport()) { showViewerFallback(root, 'no-webgl'); return null; }
+  let renderer;
+  try { renderer = createRenderer(THREE, { antialias: true }); }
+  catch (e) { showViewerFallback(root, 'renderer', e?.message || e); return null; }
   const url = (p) => base + p;
   const views = manifest.views || [];
   const lighting = (manifest.lighting && manifest.lighting.length) ? manifest.lighting : [{ id: 'default', label: 'As rendered', panoramas_dir: '' }];
@@ -106,7 +111,6 @@ export async function initProjectViewer(root, manifestUrl) {
   const fadeTo = (on) => new Promise((res) => { if (reduceMotion) return res(); fadeEl.classList.toggle('is-on', on); setTimeout(res, 260); });
 
   // ---------------------------------------------------------------- renderer
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, small ? 1.5 : 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -513,7 +517,7 @@ export async function initProjectViewer(root, manifestUrl) {
   };
   new IntersectionObserver((en) => { visible = en.some((x) => x.isIntersecting); setRunning(visible && !document.hidden); }, { threshold: 0.02 }).observe(root);
   document.addEventListener('visibilitychange', () => setRunning(visible && !document.hidden));
-  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); setRunning(false); root.classList.add('is-fallback'); });
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); setRunning(false); showViewerFallback(root, 'lost'); });
 
   // ---------------------------------------------------------------- start: show the first real render immediately
   mode = 'pano'; root.dataset.mode = 'pano';
