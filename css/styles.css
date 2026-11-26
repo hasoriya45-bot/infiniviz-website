@@ -787,3 +787,12 @@ a.channel:hover .arrow { transform: translate(4px, -4px); }
 }
 .viewer.is-project:not(.is-active) canvas { touch-action: pan-y; }
 .viewer.is-project.is-active canvas { touch-action: none; }
+
+/* Material configurator thumbnails (project viewer) */
+.pv-mats { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.pv-mat { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 4px 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-2); font: 500 11px/1.25 var(--sans); text-align: center; transition: border-color .25s, background .25s, color .25s; }
+.pv-mat img, .pv-mat i { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; display: block; }
+.pv-mat img { border-radius: 0; clip-path: circle(41%); transform: scale(1.22); } /* crop the rendered sphere so it fills the swatch */
+.pv-mat:hover { border-color: var(--line-strong); color: var(--ink); }
+.pv-mat[aria-pressed="true"] { border-color: var(--gold); background: rgba(201, 170, 98, .12); color: var(--ink); }
+.pv-reset { margin-top: 16px; }

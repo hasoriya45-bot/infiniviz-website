@@ -22,6 +22,7 @@ param(
   [switch]$ValidateOnly,
   [switch]$SkipPanoramas,
   [switch]$SkipModel,
+  [switch]$ThumbnailsOnly,
   [string]$Blender = ''
 )
 $ErrorActionPreference = 'Stop'
@@ -43,7 +44,7 @@ $full = [IO.Path]::GetFullPath($out)
 if ($full.StartsWith([IO.Path]::GetFullPath($repo), [StringComparison]::OrdinalIgnoreCase)) {
   Write-Host 'Export folder must be outside the website repository.' -ForegroundColor Red; exit 1
 }
-if ((Test-Path $out) -and -not $ValidateOnly) {
+if ((Test-Path $out) -and -not $ValidateOnly -and -not $ThumbnailsOnly) {
   $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
   $bak = Join-Path $ExportRoot "_previous\$Project-$stamp"
   New-Item -ItemType Directory -Force (Split-Path $bak) | Out-Null
@@ -58,6 +59,7 @@ if ($Resolution -gt 0) { $pyArgs += @('--resolution', $Resolution) }
 if ($ValidateOnly) { $pyArgs += '--validate-only' }
 if ($SkipPanoramas) { $pyArgs += '--skip-panoramas' }
 if ($SkipModel) { $pyArgs += '--skip-model' }
+if ($ThumbnailsOnly) { $pyArgs += '--thumbnails-only' }
 
 Write-Host "Blender : $Blender"
 Write-Host "Project : $Project"

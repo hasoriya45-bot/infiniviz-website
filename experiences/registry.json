@@ -1,4 +1,12 @@
 {
-  "featured": null,
-  "projects": []
+    "featured":  "infiniviz-showcase",
+    "projects":  [
+                     {
+                         "id":  "infiniviz-showcase",
+                         "title":  "InfiniViz Showcase Apartment",
+                         "manifest":  "experiences/infiniviz-showcase/manifest.json",
+                         "test_fixture":  false,
+                         "updated":  "2026-11-26T17:20:03"
+                     }
+                 ]
 }

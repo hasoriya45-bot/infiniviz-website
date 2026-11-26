@@ -70,6 +70,16 @@ function Test-ProjectAssets {
     if (-not (Test-Path -LiteralPath (Join-Path $Dir $v.thumbnail))) { $problems.Add("missing thumbnail: $($v.thumbnail)") }
     if (@($v.position).Count -ne 3) { $problems.Add("view $($v.id) has no camera position") }
   }
+  if ($m.web_lighting) {
+    foreach ($p in $m.web_lighting.PSObject.Properties) {
+      if ($p.Value.env -and -not (Test-Path -LiteralPath (Join-Path $Dir $p.Value.env))) { $problems.Add("missing lighting environment: $($p.Value.env)") }
+    }
+  }
+  foreach ($opt in @($m.materials)) {
+    foreach ($c in @($opt.choices)) {
+      if ($c.thumbnail -and -not (Test-Path -LiteralPath (Join-Path $Dir $c.thumbnail))) { $problems.Add("missing material thumbnail: $($c.thumbnail)") }
+    }
+  }
   Get-ChildItem -LiteralPath $Dir -Recurse -File | Where-Object { $_.Length -gt $MaxFileMB * 1MB } | ForEach-Object {
     $problems.Add(("{0} is {1:N1} MB (limit {2} MB; GitHub rejects files over 100 MB)" -f $_.Name, ($_.Length / 1MB), $MaxFileMB))
   }

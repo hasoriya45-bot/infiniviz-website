@@ -14,6 +14,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { MeshBVH } from 'three-mesh-bvh';
 import { webglSupport, showViewerFallback, createRenderer } from './viewer-fallback.js';
 
@@ -218,11 +219,23 @@ export async function initProjectViewer(root, manifestUrl) {
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             mats.forEach((m) => { if (m?.name) materialsByName.set(m.name, m); });
           }
-          if (o.isLight) { modelLights.push(o); o.userData.baseIntensity = o.intensity; if (o.castShadow !== undefined) o.castShadow = !small; }
+          if (o.isMesh) {
+            (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
+              if (m?.emissive && m.emissive.getHex() !== 0 && m.emissiveIntensity > 0 && m.userData.baseEmissive == null) m.userData.baseEmissive = m.emissiveIntensity;
+            });
+          }
+          if (o.isLight) {
+            o.userData.baseIntensity = o.intensity;
+            o.userData.kind = o.isDirectionalLight ? 'sun' : 'interior';
+            o.castShadow = false; // point lights stay shadow-free for speed; the sun gets a dedicated shadow light below
+            modelLights.push(o);
+          }
         });
         scene.add(model);
         model.updateMatrixWorld(true);
+        setupSunShadow();
         collider = buildCollider(colliderParts);
+        applyPreset3d(preset3d);
         draco.dispose();
         progress(null);
         status.model = 'loaded';
@@ -255,18 +268,78 @@ export async function initProjectViewer(root, manifestUrl) {
   }
 
   // ---------------------------------------------------------------- lighting (3D)
-  const LIGHT_PRESETS = [
-    { id: 'day', label: 'Daylight', env: 1.0, lights: 0.4, exposure: 1.0, bg: '#d9dde0' },
-    { id: 'dusk', label: 'Dusk', env: 0.45, lights: 1.0, exposure: 0.95, bg: '#3a2f2a' },
-    { id: 'night', label: 'Night', env: 0.08, lights: 1.25, exposure: 1.1, bg: '#0b0d12' },
-  ];
-  let preset3d = 1;
-  function applyPreset3d(i) {
+  // From the manifest (exported from Blender): per preset HDRI, intensities and exposure. Fallback presets otherwise.
+  const WEB_LIGHT = manifest.web_lighting || null;
+  const LIGHT_PRESETS = WEB_LIGHT
+    ? Object.entries(WEB_LIGHT).map(([id, p]) => ({ id, label: p.label || id, env: p.env_intensity ?? 1, bgIntensity: p.background_intensity, bounce: p.bounce ?? 0, interior: p.interior ?? 0, sun: p.sun ?? 1, exposure: p.exposure ?? 1, envUrl: p.env ? url(p.env) : null }))
+    : [
+      { id: 'day', label: 'Daylight', env: 1.0, interior: 0.4, sun: 1, exposure: 1.0, bg: '#d9dde0' },
+      { id: 'evening', label: 'Evening', env: 0.45, interior: 1.0, sun: 0, exposure: 0.95, bg: '#3a2f2a' },
+      { id: 'night', label: 'Night', env: 0.08, interior: 1.25, sun: 0, exposure: 1.1, bg: '#0b0d12' },
+    ];
+  let preset3d = WEB_LIGHT ? 0 : 1;
+  const envCache = new Map();
+  const rgbe = new RGBELoader();
+  function loadEnv(href) {
+    if (!envCache.has(href)) {
+      envCache.set(href, rgbe.loadAsync(href).then((tex) => {
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        return { background: tex, environment: pmrem.fromEquirectangular(tex).texture };
+      }));
+    }
+    return envCache.get(href);
+  }
+  // WebGL has no global illumination: a soft sky/floor fill stands in for the light Cycles bounces onto ceilings and walls.
+  const bounceLight = new THREE.HemisphereLight(0xe8edf2, 0xd2bfa4, 0);
+  scene.add(bounceLight);
+  let sunShadow = null;
+  function setupSunShadow() {
+    const sunSrc = modelLights.find((l) => l.isDirectionalLight);
+    if (!sunSrc) return;
+    // glTF suns sit at the origin; give the shadow a proper position above the model along the same direction.
+    const from = new THREE.Vector3(), to = new THREE.Vector3();
+    sunSrc.getWorldPosition(from); sunSrc.target.getWorldPosition(to);
+    const dir = to.sub(from).normalize();
+    const r = Math.max(size.x, size.z) * 0.75 + 2;
+    sunShadow = new THREE.DirectionalLight(sunSrc.color, 0);
+    sunShadow.position.copy(center).addScaledVector(dir, -r * 2);
+    sunShadow.target.position.copy(center);
+    sunShadow.castShadow = true;
+    sunShadow.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
+    Object.assign(sunShadow.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 0.5, far: r * 4 });
+    sunShadow.shadow.bias = -0.0004; sunShadow.shadow.normalBias = 0.02;
+    sunShadow.userData = { baseIntensity: sunSrc.userData.baseIntensity, kind: 'sun' };
+    scene.add(sunShadow, sunShadow.target);
+    sunSrc.userData.baseIntensity = 0; // the shadow-casting copy replaces it
+    modelLights.push(sunShadow);
+  }
+  async function applyPreset3d(i) {
     preset3d = i; const p = LIGHT_PRESETS[i];
-    scene.traverse((o) => { if (o.isMesh) { (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { if (m && 'envMapIntensity' in m) m.envMapIntensity = p.env; }); } });
-    modelLights.forEach((l) => (l.intensity = l.userData.baseIntensity * p.lights));
-    scene.background.set(p.bg);
+    renderer.toneMappingExposure = p.exposure;
+    bounceLight.intensity = p.bounce ?? 0;
+    scene.traverse((o) => {
+      if (!o.isMesh) return;
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
+        if (!m) return;
+        if ('envMapIntensity' in m) m.envMapIntensity = p.env;
+        if (m.userData.baseEmissive != null) m.emissiveIntensity = m.userData.baseEmissive * p.interior;
+      });
+    });
+    modelLights.forEach((l) => (l.intensity = l.userData.baseIntensity * (l.userData.kind === 'sun' ? p.sun : p.interior)));
+    if (p.envUrl) {
+      try {
+        const env = await loadEnv(p.envUrl);
+        if (preset3d !== i) return;
+        scene.environment = env.environment; scene.background = env.background;
+        scene.backgroundIntensity = p.bgIntensity ?? Math.max(0.15, p.env);
+      } catch (e) { status.errors.push(`environment ${p.envUrl}: ${e.message || e}`); }
+    } else if (p.bg) { scene.background = new THREE.Color(p.bg); }
     needsRender = true;
+  }
+  /** Keep the 360° (Cycles) lighting and the 3D lighting on the same setup when the ids match. */
+  function panoIndexFor(presetId) {
+    const i = lighting.findIndex((l) => l.id === presetId || (presetId === 'day' && l.id === 'default'));
+    return i;
   }
 
   // ---------------------------------------------------------------- materials
@@ -284,6 +357,12 @@ export async function initProjectViewer(root, manifestUrl) {
     matState[optIdx] = choice.material;
     applyPreset3d(preset3d);
     return true;
+  }
+  function resetMaterials() {
+    (manifest.materials || []).forEach((opt, oi) => {
+      const ci = opt.choices.findIndex((c) => c.material === opt.target_material);
+      if (ci >= 0 && (matState[oi] ?? opt.target_material) !== opt.target_material) applyMaterial(oi, ci);
+    });
   }
 
   // ---------------------------------------------------------------- orbit
@@ -408,20 +487,28 @@ export async function initProjectViewer(root, manifestUrl) {
         <dt>Free camera</dt><dd>Drag to rotate, scroll to zoom, right-drag or two fingers to pan. The ceiling is cut away so you can see in.</dd></dl>
         <p class="pv-note">The 3D modes show the exported Blender model in real time; real-time lighting is an approximation and does not match Cycles exactly.</p>`;
     } else if (openPanel === 'lighting') {
-      const panoBtns = lighting.map((l, i) => `<button class="pv-chip" type="button" data-pv-light="${i}" aria-pressed="${i === lightingIdx}">${esc(l.label)}</button>`).join('');
-      const rtBtns = LIGHT_PRESETS.map((p, i) => `<button class="pv-chip" type="button" data-pv-rt="${i}" aria-pressed="${i === preset3d}">${p.label}</button>`).join('');
-      panelBox.innerHTML = `<h4>Lighting</h4>
-        <p class="pv-label">360° renders (Blender Cycles)</p><div class="pv-chips">${panoBtns}</div>
-        ${lighting.length < 2 ? '<p class="pv-note">Only one lighting setup was rendered for this project. Add lighting variants in the export config to render more.</p>' : ''}
-        <p class="pv-label">3D model (real-time approximation)</p><div class="pv-chips">${rtBtns}</div>`;
+      if (WEB_LIGHT) {
+        const btns = LIGHT_PRESETS.map((p, i) => `<button class="pv-chip" type="button" data-pv-rt="${i}" aria-pressed="${i === preset3d}">${esc(p.label)}</button>`).join('');
+        panelBox.innerHTML = `<h4>Lighting</h4><div class="pv-chips">${btns}</div>
+          <p class="pv-note">360° views switch to the matching Blender Cycles render. Walkthrough and free camera use real-time lighting with the same HDRI sky, which is close to but not identical with Cycles.</p>`;
+      } else {
+        const panoBtns = lighting.map((l, i) => `<button class="pv-chip" type="button" data-pv-light="${i}" aria-pressed="${i === lightingIdx}">${esc(l.label)}</button>`).join('');
+        const rtBtns = LIGHT_PRESETS.map((p, i) => `<button class="pv-chip" type="button" data-pv-rt="${i}" aria-pressed="${i === preset3d}">${p.label}</button>`).join('');
+        panelBox.innerHTML = `<h4>Lighting</h4>
+          <p class="pv-label">360° renders (Blender Cycles)</p><div class="pv-chips">${panoBtns}</div>
+          <p class="pv-label">3D model (real-time approximation)</p><div class="pv-chips">${rtBtns}</div>`;
+      }
     } else if (openPanel === 'materials') {
       panelBox.innerHTML = `<h4>Materials</h4>` + manifest.materials.map((opt, oi) => `
-        <p class="pv-label">${esc(opt.label)}</p><div class="pv-chips">${opt.choices.map((c, ci) => {
+        <p class="pv-label">${esc(opt.label)}</p><div class="pv-mats">${opt.choices.map((c, ci) => {
           const cur = (matState[oi] ?? opt.target_material) === c.material;
           const m = materialsByName.get(c.material);
           const sw = m?.color ? `#${m.color.getHexString()}` : '#777';
-          return `<button class="pv-chip" type="button" data-pv-mat="${oi}:${ci}" aria-pressed="${cur}"><i style="background:${sw}"></i>${esc(c.label)}</button>`;
-        }).join('')}</div>`).join('') + (mode === 'pano' ? '<p class="pv-note">Material changes apply to the 3D model. Switch to Walkthrough or Free camera to see them.</p>' : '');
+          const img = c.thumbnail ? `<img src="${esc(url(c.thumbnail))}" alt="" width="56" height="56" loading="lazy">` : `<i style="background:${sw}"></i>`;
+          return `<button class="pv-mat" type="button" data-pv-mat="${oi}:${ci}" aria-pressed="${cur}" title="${esc(c.label)}">${img}<span>${esc(c.label)}</span></button>`;
+        }).join('')}</div>`).join('') +
+        `<button class="pv-chip pv-reset" type="button" data-pv-matreset>Reset materials</button>` +
+        (mode === 'pano' ? '<p class="pv-note">Material changes apply to the real-time 3D model. Switch to Walkthrough or Free camera to see them; the 360° views are fixed Cycles renders.</p>' : '');
     }
   }
   root.addEventListener('click', async (e) => {
@@ -431,8 +518,12 @@ export async function initProjectViewer(root, manifestUrl) {
     else if (t.dataset.pvView != null) { root.classList.add('is-active'); if (!mode) await setMode('pano', { viewIndex: +t.dataset.pvView }); else await goView(+t.dataset.pvView); }
     else if (t.dataset.pvPanel) { openPanel = openPanel === t.dataset.pvPanel ? null : t.dataset.pvPanel; renderPanel(); }
     else if (t.dataset.pvLight != null) { lightingIdx = +t.dataset.pvLight; renderPanel(); if (mode === 'pano') await showPanorama(current); }
-    else if (t.dataset.pvRt != null) { applyPreset3d(+t.dataset.pvRt); renderPanel(); }
+    else if (t.dataset.pvRt != null) {
+      const i = +t.dataset.pvRt; applyPreset3d(i); renderPanel();
+      if (WEB_LIGHT) { const li = panoIndexFor(LIGHT_PRESETS[i].id); if (li >= 0 && li !== lightingIdx) { lightingIdx = li; if (mode === 'pano') await showPanorama(current); } }
+    }
     else if (t.dataset.pvMat) { const [o, c] = t.dataset.pvMat.split(':').map(Number); if (!model) await loadModel(); applyMaterial(o, c); renderPanel(); }
+    else if (t.hasAttribute('data-pv-matreset')) { resetMaterials(); renderPanel(); }
     else if (t.hasAttribute('data-pv-reset')) { if (mode === 'orbit') resetOrbit(); else if (mode === 'walk') spawnAt(current); else if (mode === 'pano') { pano.yaw = views[current]?.yaw || 0; pano.pitch = 0; pano.fov = 75; camera.fov = 75; camera.updateProjectionMatrix(); needsRender = true; } }
     else if (t.hasAttribute('data-pv-full')) { if (document.fullscreenElement) document.exitFullscreen(); else root.requestFullscreen?.().catch(() => {}); }
   });

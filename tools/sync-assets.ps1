@@ -40,7 +40,7 @@ if (Test-Path -LiteralPath $dst) {
   Remove-Item -LiteralPath $dst -Recurse -Force
 }
 New-Item -ItemType Directory -Force $dst | Out-Null
-foreach ($part in 'model', 'panoramas', 'thumbnails') {
+foreach ($part in 'model', 'panoramas', 'thumbnails', 'environment') {
   $p = Join-Path $src $part
   if (Test-Path -LiteralPath $p) { Copy-Item -LiteralPath $p -Destination $dst -Recurse }
 }

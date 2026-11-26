@@ -1,0 +1,432 @@
+{
+  "schema": 1,
+  "id": "infiniviz-showcase",
+  "title": "InfiniViz Showcase Apartment",
+  "description": "An InfiniViz studio showcase interior, modelled, lit and rendered in Blender Cycles, with CC0 Poly Haven textures. Not a client project.",
+  "test_fixture": false,
+  "generated": "2026-11-26T17:14:30",
+  "source": {
+    "blend_file": "InfiniViz Showcase.blend",
+    "blender": "5.2.2 LTS",
+    "scene": "InfiniViz Showcase"
+  },
+  "render": {
+    "engine": "CYCLES",
+    "samples": 128,
+    "panorama_size": [
+      4096,
+      2048
+    ],
+    "device": "GPU (OPTIX: NVIDIA GeForce RTX 3060 Ti)"
+  },
+  "model": {
+    "file": "model/infiniviz-showcase.glb",
+    "bytes": 23778324,
+    "meshes": 117,
+    "materials": [
+      "IVZ_Ceiling_Concrete",
+      "IVZ_Ceiling_Wood",
+      "IVZ_Floor_Concrete",
+      "IVZ_Floor_Marble",
+      "IVZ_Metal_Brass",
+      "IVZ_Upholstery_Leather_Brown",
+      "IVZ_Upholstery_Leather_White",
+      "IVZ_Wall_Concrete",
+      "IVZ_Wall_Grey",
+      "IVZ_Glass",
+      "IVZ_Frame",
+      "IVZ_Ceiling",
+      "IVZ_Wood",
+      "IVZ_Metal",
+      "IVZ_Upholstery",
+      "IVZ_Stone",
+      "IVZ_Wood_Walnut",
+      "IVZ_Floor",
+      "IVZ_Light_Strip",
+      "IVZ_Pendant_Glass",
+      "IVZ_Plant",
+      "IVZ_Planter",
+      "IVZ_Rug",
+      "IVZ_Terrace",
+      "IVZ_TV_Screen",
+      "IVZ_Wall"
+    ],
+    "images": 35,
+    "triangles": 7393,
+    "extensionsRequired": [
+      "KHR_draco_mesh_compression",
+      "KHR_texture_transform",
+      "EXT_texture_webp",
+      "KHR_lights_punctual"
+    ]
+  },
+  "bounds": {
+    "min": [
+      -6.5,
+      -0.13,
+      -3.95
+    ],
+    "max": [
+      6.5,
+      3.32,
+      6.95
+    ]
+  },
+  "eye_height": 1.6,
+  "views": [
+    {
+      "id": "view-01",
+      "slug": "living",
+      "label": "Living room",
+      "camera": "CAM_01_Living",
+      "position": [
+        -2.6,
+        1.55,
+        -2.6
+      ],
+      "yaw": 2.8706,
+      "pitch": -0.0349,
+      "panorama": "panoramas/view-01-living.jpg",
+      "panorama_mobile": "panoramas/2k/view-01-living.jpg",
+      "thumbnail": "thumbnails/view-01-living.jpg"
+    },
+    {
+      "id": "view-02",
+      "slug": "entrance",
+      "label": "Entrance",
+      "camera": "CAM_02_Entrance",
+      "position": [
+        4.6,
+        1.55,
+        1.1
+      ],
+      "yaw": 1.3361,
+      "pitch": -0.0349,
+      "panorama": "panoramas/view-02-entrance.jpg",
+      "panorama_mobile": "panoramas/2k/view-02-entrance.jpg",
+      "thumbnail": "thumbnails/view-02-entrance.jpg"
+    },
+    {
+      "id": "view-03",
+      "slug": "kitchen",
+      "label": "Kitchen",
+      "camera": "CAM_03_Kitchen",
+      "position": [
+        0.4,
+        1.55,
+        0.1
+      ],
+      "yaw": -0.7378,
+      "pitch": -0.0349,
+      "panorama": "panoramas/view-03-kitchen.jpg",
+      "panorama_mobile": "panoramas/2k/view-03-kitchen.jpg",
+      "thumbnail": "thumbnails/view-03-kitchen.jpg"
+    },
+    {
+      "id": "view-04",
+      "slug": "dining",
+      "label": "Dining",
+      "camera": "CAM_04_Dining",
+      "position": [
+        3.6,
+        1.55,
+        2.6
+      ],
+      "yaw": 0.9828,
+      "pitch": -0.0349,
+      "panorama": "panoramas/view-04-dining.jpg",
+      "panorama_mobile": "panoramas/2k/view-04-dining.jpg",
+      "thumbnail": "thumbnails/view-04-dining.jpg"
+    },
+    {
+      "id": "view-05",
+      "slug": "window",
+      "label": "Window view",
+      "camera": "CAM_05_Window",
+      "position": [
+        -0.4,
+        1.55,
+        3.0
+      ],
+      "yaw": -0.0,
+      "pitch": -0.0349,
+      "panorama": "panoramas/view-05-window.jpg",
+      "panorama_mobile": "panoramas/2k/view-05-window.jpg",
+      "thumbnail": "thumbnails/view-05-window.jpg"
+    },
+    {
+      "id": "view-06",
+      "slug": "lounge",
+      "label": "Reading corner",
+      "camera": "CAM_06_Lounge",
+      "position": [
+        -4.4,
+        1.55,
+        1.4
+      ],
+      "yaw": -0.9561,
+      "pitch": -0.0349,
+      "panorama": "panoramas/view-06-lounge.jpg",
+      "panorama_mobile": "panoramas/2k/view-06-lounge.jpg",
+      "thumbnail": "thumbnails/view-06-lounge.jpg"
+    },
+    {
+      "id": "view-07",
+      "slug": "ceiling",
+      "label": "Ceiling view",
+      "camera": "CAM_07_Ceiling",
+      "position": [
+        0.2,
+        1.4,
+        -0.4
+      ],
+      "yaw": -2.5536,
+      "pitch": 0.6632,
+      "panorama": "panoramas/view-07-ceiling.jpg",
+      "panorama_mobile": "panoramas/2k/view-07-ceiling.jpg",
+      "thumbnail": "thumbnails/view-07-ceiling.jpg"
+    },
+    {
+      "id": "view-08",
+      "slug": "media",
+      "label": "Media wall",
+      "camera": "CAM_08_Media",
+      "position": [
+        -0.4,
+        1.55,
+        -0.2
+      ],
+      "yaw": 1.5708,
+      "pitch": -0.0349,
+      "panorama": "panoramas/view-08-media.jpg",
+      "panorama_mobile": "panoramas/2k/view-08-media.jpg",
+      "thumbnail": "thumbnails/view-08-media.jpg"
+    },
+    {
+      "id": "view-09",
+      "slug": "overview",
+      "label": "Full room view",
+      "camera": "CAM_09_Overview",
+      "position": [
+        5.0,
+        2.55,
+        -2.55
+      ],
+      "yaw": 2.1339,
+      "pitch": -0.3142,
+      "panorama": "panoramas/view-09-overview.jpg",
+      "panorama_mobile": "panoramas/2k/view-09-overview.jpg",
+      "thumbnail": "thumbnails/view-09-overview.jpg"
+    }
+  ],
+  "lighting": [
+    {
+      "id": "default",
+      "label": "Day",
+      "panoramas_dir": ""
+    },
+    {
+      "id": "evening",
+      "label": "Evening",
+      "panoramas_dir": "evening",
+      "exposure": 1
+    },
+    {
+      "id": "night",
+      "label": "Night",
+      "panoramas_dir": "night",
+      "exposure": 1
+    }
+  ],
+  "materials": [
+    {
+      "label": "Walls",
+      "target_material": "IVZ_Wall",
+      "choices": [
+        {
+          "label": "White plaster",
+          "material": "IVZ_Wall",
+          "thumbnail": "thumbnails/materials/IVZ_Wall.jpg"
+        },
+        {
+          "label": "Grey plaster",
+          "material": "IVZ_Wall_Grey",
+          "thumbnail": "thumbnails/materials/IVZ_Wall_Grey.jpg"
+        },
+        {
+          "label": "Concrete",
+          "material": "IVZ_Wall_Concrete",
+          "thumbnail": "thumbnails/materials/IVZ_Wall_Concrete.jpg"
+        }
+      ]
+    },
+    {
+      "label": "Floor",
+      "target_material": "IVZ_Floor",
+      "choices": [
+        {
+          "label": "Oak planks",
+          "material": "IVZ_Floor",
+          "thumbnail": "thumbnails/materials/IVZ_Floor.jpg"
+        },
+        {
+          "label": "Polished concrete",
+          "material": "IVZ_Floor_Concrete",
+          "thumbnail": "thumbnails/materials/IVZ_Floor_Concrete.jpg"
+        },
+        {
+          "label": "Marble tiles",
+          "material": "IVZ_Floor_Marble",
+          "thumbnail": "thumbnails/materials/IVZ_Floor_Marble.jpg"
+        }
+      ]
+    },
+    {
+      "label": "Wood finish",
+      "target_material": "IVZ_Wood",
+      "choices": [
+        {
+          "label": "Oak",
+          "material": "IVZ_Wood",
+          "thumbnail": "thumbnails/materials/IVZ_Wood.jpg"
+        },
+        {
+          "label": "Walnut",
+          "material": "IVZ_Wood_Walnut",
+          "thumbnail": "thumbnails/materials/IVZ_Wood_Walnut.jpg"
+        }
+      ]
+    },
+    {
+      "label": "Upholstery",
+      "target_material": "IVZ_Upholstery",
+      "choices": [
+        {
+          "label": "Woven fabric",
+          "material": "IVZ_Upholstery",
+          "thumbnail": "thumbnails/materials/IVZ_Upholstery.jpg"
+        },
+        {
+          "label": "Cognac leather",
+          "material": "IVZ_Upholstery_Leather_Brown",
+          "thumbnail": "thumbnails/materials/IVZ_Upholstery_Leather_Brown.jpg"
+        },
+        {
+          "label": "Ivory leather",
+          "material": "IVZ_Upholstery_Leather_White",
+          "thumbnail": "thumbnails/materials/IVZ_Upholstery_Leather_White.jpg"
+        }
+      ]
+    },
+    {
+      "label": "Metal details",
+      "target_material": "IVZ_Metal",
+      "choices": [
+        {
+          "label": "Black steel",
+          "material": "IVZ_Metal",
+          "thumbnail": "thumbnails/materials/IVZ_Metal.jpg"
+        },
+        {
+          "label": "Brushed brass",
+          "material": "IVZ_Metal_Brass",
+          "thumbnail": "thumbnails/materials/IVZ_Metal_Brass.jpg"
+        }
+      ]
+    },
+    {
+      "label": "Ceiling",
+      "target_material": "IVZ_Ceiling",
+      "choices": [
+        {
+          "label": "White plaster",
+          "material": "IVZ_Ceiling",
+          "thumbnail": "thumbnails/materials/IVZ_Ceiling.jpg"
+        },
+        {
+          "label": "Oak",
+          "material": "IVZ_Ceiling_Wood",
+          "thumbnail": "thumbnails/materials/IVZ_Ceiling_Wood.jpg"
+        },
+        {
+          "label": "Concrete",
+          "material": "IVZ_Ceiling_Concrete",
+          "thumbnail": "thumbnails/materials/IVZ_Ceiling_Concrete.jpg"
+        }
+      ]
+    }
+  ],
+  "textures": [
+    "textures/brown_leather_diffuse_2k_jpg.png",
+    "textures/brown_leather_nor_gl_2k_jpg.png",
+    "textures/brown_leather_rough_2k_jpg.png",
+    "textures/concrete_floor_02_diffuse_2k_jpg.png",
+    "textures/concrete_floor_02_nor_gl_2k_jpg.png",
+    "textures/concrete_floor_02_rough_2k_jpg.png",
+    "textures/concrete_wall_003_diffuse_2k_jpg.png",
+    "textures/concrete_wall_003_nor_gl_2k_jpg.png",
+    "textures/concrete_wall_003_rough_2k_jpg.png",
+    "textures/fabric_pattern_07_nor_gl_2k_jpg.png",
+    "textures/fabric_pattern_07_rough_2k_jpg.png",
+    "textures/grey_plaster_diffuse_2k_jpg.png",
+    "textures/grey_plaster_nor_gl_2k_jpg.png",
+    "textures/grey_plaster_rough_2k_jpg.png",
+    "textures/kloofendal_48d_partly_cloudy_puresky_4k_hdr.png",
+    "textures/laminate_floor_02_diffuse_2k_jpg.png",
+    "textures/laminate_floor_02_nor_gl_2k_jpg.png",
+    "textures/laminate_floor_02_rough_2k_jpg.png",
+    "textures/leather_white_diffuse_2k_jpg.png",
+    "textures/leather_white_nor_gl_2k_jpg.png",
+    "textures/leather_white_rough_2k_jpg.png",
+    "textures/lilienstein_2k_hdr.png",
+    "textures/marble_01_diffuse_2k_jpg.png",
+    "textures/marble_01_nor_gl_2k_jpg.png",
+    "textures/marble_01_rough_2k_jpg.png",
+    "textures/marble_tiles_diffuse_2k_jpg.png",
+    "textures/marble_tiles_nor_gl_2k_jpg.png",
+    "textures/marble_tiles_rough_2k_jpg.png",
+    "textures/moonless_golf_2k_hdr.png",
+    "textures/oak_veneer_01_diffuse_2k_jpg.png",
+    "textures/oak_veneer_01_nor_gl_2k_jpg.png",
+    "textures/oak_veneer_01_rough_2k_jpg.png",
+    "textures/walnut_veneer_02_diffuse_2k_jpg.png",
+    "textures/walnut_veneer_02_nor_gl_2k_jpg.png",
+    "textures/walnut_veneer_02_rough_2k_jpg.png",
+    "textures/white_plaster_02_diffuse_2k_jpg.png",
+    "textures/white_plaster_02_nor_gl_2k_jpg.png",
+    "textures/white_plaster_02_rough_2k_jpg.png"
+  ],
+  "web_lighting": {
+    "day": {
+      "label": "Day",
+      "env_intensity": 1.5,
+      "background_intensity": 0.75,
+      "bounce": 0.9,
+      "exposure": 1.6,
+      "interior": 0.0,
+      "sun": 1.0,
+      "env": "environment/day.hdr"
+    },
+    "evening": {
+      "label": "Evening",
+      "env_intensity": 0.55,
+      "background_intensity": 0.5,
+      "bounce": 0.12,
+      "exposure": 1,
+      "interior": 0.55,
+      "sun": 0.0,
+      "env": "environment/evening.hdr"
+    },
+    "night": {
+      "label": "Night",
+      "env_intensity": 0.2,
+      "background_intensity": 0.2,
+      "bounce": 0.05,
+      "exposure": 1,
+      "interior": 0.45,
+      "sun": 0.0,
+      "env": "environment/night.hdr"
+    }
+  },
+  "environment": null
+}

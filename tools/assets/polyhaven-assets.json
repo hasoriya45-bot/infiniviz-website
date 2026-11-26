@@ -1,0 +1,17 @@
+{
+  "note": "CC0 assets from https://polyhaven.com used by the InfiniViz showcase scene. Downloaded by tools/assets/fetch-polyhaven.ps1 to ../infiniviz-assets/polyhaven (outside the website).",
+  "texture_resolution": "2k",
+  "textures": [
+    "laminate_floor_02", "concrete_floor_02", "marble_tiles",
+    "white_plaster_02", "grey_plaster", "concrete_wall_003",
+    "oak_veneer_01", "walnut_veneer_02",
+    "fabric_pattern_07", "brown_leather", "leather_white",
+    "marble_01"
+  ],
+  "texture_maps": ["Diffuse", "nor_gl", "Rough"],
+  "hdris": [
+    { "id": "kloofendal_48d_partly_cloudy_puresky", "resolution": "4k", "use": "day" },
+    { "id": "lilienstein", "resolution": "2k", "use": "evening" },
+    { "id": "moonless_golf", "resolution": "2k", "use": "night" }
+  ]
+}

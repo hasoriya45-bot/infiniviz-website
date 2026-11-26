@@ -1,0 +1,64 @@
+{
+  "id": "infiniviz-showcase",
+  "title": "InfiniViz Showcase Apartment",
+  "description": "An InfiniViz studio showcase interior, modelled, lit and rendered in Blender Cycles, with CC0 Poly Haven textures. Not a client project.",
+  "scene": "InfiniViz Showcase",
+  "eye_height": 1.6,
+  "panorama_width": 4096,
+  "panorama_jpeg_quality": 90,
+  "samples": 128,
+  "default_lighting_label": "Day",
+  "views": [
+    { "slug": "living",    "label": "Living room",     "camera": "CAM_01_Living" },
+    { "slug": "entrance",  "label": "Entrance",        "camera": "CAM_02_Entrance" },
+    { "slug": "kitchen",   "label": "Kitchen",         "camera": "CAM_03_Kitchen" },
+    { "slug": "dining",    "label": "Dining",          "camera": "CAM_04_Dining" },
+    { "slug": "window",    "label": "Window view",     "camera": "CAM_05_Window" },
+    { "slug": "lounge",    "label": "Reading corner",  "camera": "CAM_06_Lounge" },
+    { "slug": "ceiling",   "label": "Ceiling view",    "camera": "CAM_07_Ceiling" },
+    { "slug": "media",     "label": "Media wall",      "camera": "CAM_08_Media" },
+    { "slug": "overview",  "label": "Full room view",  "camera": "CAM_09_Overview" }
+  ],
+  "model": {
+    "draco": true,
+    "image_format": "WEBP",
+    "image_quality": 82,
+    "export_lights": true,
+    "max_glb_mb": 60,
+    "show_collections": ["IVZ_Lights_Interior"]
+  },
+  "lighting_variants": [
+    { "id": "evening", "label": "Evening", "world": "World_Evening", "show_collections": ["IVZ_Lights_Interior"], "hide_collections": ["IVZ_Lights_Day"] },
+    { "id": "night",   "label": "Night",   "world": "World_Night",   "show_collections": ["IVZ_Lights_Interior"], "hide_collections": ["IVZ_Lights_Day"] }
+  ],
+  "web_lighting": {
+    "day":     { "label": "Day",     "hdri": "kloofendal_48d_partly_cloudy_puresky", "env_intensity": 1.5,  "background_intensity": 0.75, "bounce": 0.9,  "exposure": 1.6, "interior": 0.0, "sun": 1.0 },
+    "evening": { "label": "Evening", "hdri": "lilienstein",                          "env_intensity": 0.55, "background_intensity": 0.5,  "bounce": 0.12, "exposure": 1.0, "interior": 0.55, "sun": 0.0 },
+    "night":   { "label": "Night",   "hdri": "moonless_golf",                        "env_intensity": 0.2,  "background_intensity": 0.2,  "bounce": 0.05, "exposure": 1.0, "interior": 0.45, "sun": 0.0 }
+  },
+  "material_options": [
+    { "label": "Walls",       "target_material": "IVZ_Wall",       "choices": [
+      { "label": "White plaster", "material": "IVZ_Wall" },
+      { "label": "Grey plaster",  "material": "IVZ_Wall_Grey" },
+      { "label": "Concrete",      "material": "IVZ_Wall_Concrete" } ] },
+    { "label": "Floor",       "target_material": "IVZ_Floor",      "choices": [
+      { "label": "Oak planks",        "material": "IVZ_Floor" },
+      { "label": "Polished concrete", "material": "IVZ_Floor_Concrete" },
+      { "label": "Marble tiles",      "material": "IVZ_Floor_Marble" } ] },
+    { "label": "Wood finish", "target_material": "IVZ_Wood",       "choices": [
+      { "label": "Oak",    "material": "IVZ_Wood" },
+      { "label": "Walnut", "material": "IVZ_Wood_Walnut" } ] },
+    { "label": "Upholstery",  "target_material": "IVZ_Upholstery", "choices": [
+      { "label": "Woven fabric",  "material": "IVZ_Upholstery" },
+      { "label": "Cognac leather","material": "IVZ_Upholstery_Leather_Brown" },
+      { "label": "Ivory leather", "material": "IVZ_Upholstery_Leather_White" } ] },
+    { "label": "Metal details","target_material": "IVZ_Metal",     "choices": [
+      { "label": "Black steel",   "material": "IVZ_Metal" },
+      { "label": "Brushed brass", "material": "IVZ_Metal_Brass" } ] },
+    { "label": "Ceiling",     "target_material": "IVZ_Ceiling",    "choices": [
+      { "label": "White plaster", "material": "IVZ_Ceiling" },
+      { "label": "Oak",           "material": "IVZ_Ceiling_Wood" },
+      { "label": "Concrete",      "material": "IVZ_Ceiling_Concrete" } ] }
+  ],
+  "web_environment": null
+}

@@ -4,9 +4,9 @@ Three commands take a Blender project to the live "Step inside. Look around." se
 Run them from the repository folder in PowerShell.
 
 ```powershell
-.\tools\export.ps1 -Project nimesh-bedroom -Blend "D:\INFINIVIZ\Nimesh Bedroom\Nimesh Bedroom.blend"
-.\tools\sync-assets.ps1 -Project nimesh-bedroom -Feature
-.\tools\publish.ps1 -Publish -Message "Add Nimesh Bedroom 3D experience"
+.\tools\export.cmd -Project nimesh-bedroom -Blend "D:\INFINIVIZ\Nimesh Bedroom\Nimesh Bedroom.blend"
+.\tools\sync-assets.cmd -Project nimesh-bedroom -Feature
+.\tools\publish.cmd -Publish -Message "Add Nimesh Bedroom 3D experience"
 ```
 
 | Step | What it does | Stops if… |
@@ -55,7 +55,7 @@ Open the result in Blender, check the cameras and lighting, then run `export.ps1
    to `lighting_variants`. Each variant renders its own validated set of 9 panoramas. In the 3D modes,
    lighting is a real-time approximation; baked Blender lighting does not change dynamically.
 
-Check a file without rendering: `.\tools\export.ps1 -Project nimesh-bedroom -Blend "...blend" -ValidateOnly`
+Check a file without rendering: `.\tools\export.cmd -Project nimesh-bedroom -Blend "...blend" -ValidateOnly`
 Quick low-quality test: add `-Samples 32`. Higher resolution: `-Resolution 8192`.
 
 ## A new project
@@ -64,3 +64,29 @@ Copy `tools\blender\projects\nimesh-bedroom.json` to `<new-id>.json`, edit the i
 ## Checking the pipeline on a new PC
 `pipeline-test.json` with `tools\blender\make_test_fixture.py` builds a plain test room and runs the whole chain.
 It is marked `test_fixture`, so the live site never shows it and `test-site.ps1` and `publish.ps1` refuse to publish it.
+
+## Running the scripts on Windows
+This PC's PowerShell blocks `.ps1` scripts (execution policy "Restricted"). Use the `.cmd` launchers in `tools\`:
+they run the matching `.ps1` with a one-off `-ExecutionPolicy Bypass`, without changing any system setting.
+
+## InfiniViz showcase (Section 04 environment)
+The Section 04 environment is an original InfiniViz showcase apartment built entirely by script.
+It's a studio demo, not a client project.
+```powershell
+.\tools\vendor-sync.cmd                      # once: local copies of three.js etc. (already in the repo)
+powershell -ExecutionPolicy Bypass -File .\tools\assets\fetch-polyhaven.ps1   # CC0 textures + HDRIs -> ..\infiniviz-assets\polyhaven
+& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b --factory-startup --python tools\blender\showcase\build_showcase.py -- --assets ..\infiniviz-assets\polyhaven --out "..\infiniviz-assets\showcase\InfiniViz Showcase.blend"
+& "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" -b "..\infiniviz-assets\showcase\InfiniViz Showcase.blend" --python tools\blender\preview_render.py -- --config tools\blender\projects\infiniviz-showcase.json --out ..\infiniviz-exports\infiniviz-showcase-previews
+.\tools\export.cmd -Project infiniviz-showcase -Blend "..\infiniviz-assets\showcase\InfiniViz Showcase.blend"
+.\tools\sync-assets.cmd -Project infiniviz-showcase -Feature
+.\tools\publish.cmd                          # tests + dry run; add -Publish only after approval
+```
+Material options, lighting variants (Day / Evening / Night) and web lighting presets live in
+`tools\blender\projects\infiniviz-showcase.json`. Every configurator choice gets a Cycles-rendered thumbnail.
+
+## Blender MCP (live editing from Claude)
+* Claude Code user settings (`C:\Users\User\.claude.json`) contain a `blender` MCP server: `uvx blender-mcp` (v2.0.0).
+* In Blender 5.2, enable the **Blender MCP** add-on (v1.8; already installed). In the 3D Viewport press **N**, open the
+  **BlenderMCP** tab and click **Connect to MCP server** (port 9876).
+* Start a new Claude Code session; the Blender tools then appear. They can inspect the open scene, objects and materials and run Python.
+* MCP is only for interactive work. The website never depends on Blender running; exports are static files.

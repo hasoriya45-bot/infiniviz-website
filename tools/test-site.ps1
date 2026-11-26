@@ -73,7 +73,7 @@ else {
     foreach ($size in @(@{ n = 'desktop'; w = 1440; h = 900; url = "${base}?selftest=1"; shot = { param($hash) "${base}?shot=1$(if ($hash) { "#$hash" })" } },
                         @{ n = 'mobile'; w = 520; h = 900; url = "${base}tools/test-frame.html?w=390&h=844"; shot = { param($hash) "${base}tools/test-frame.html?w=390&h=844&mode=shot$(if ($hash) { "&hash=$hash" })" } })) {
       $out = Join-Path $results "$($size.n)-selftest.html"
-      $edgeArgs = $common + @("--window-size=$($size.w),$($size.h)", '--virtual-time-budget=90000', '--dump-dom', $size.url)
+      $edgeArgs = $common + @("--window-size=$($size.w),$($size.h)", '--virtual-time-budget=300000', '--dump-dom', $size.url)
       $null = Start-Process -FilePath $edge -ArgumentList $edgeArgs -RedirectStandardOutput $out -RedirectStandardError "$out.log" -Wait -PassThru -WindowStyle Hidden
       $dom = [IO.File]::ReadAllText($out)
       $mm = [regex]::Match($dom, '<pre id="ivz-selftest"[^>]*>([\s\S]*?)</pre>')

@@ -28,6 +28,7 @@ import sys
 import time
 import traceback
 
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -62,6 +63,7 @@ def parse_args():
     p.add_argument("--validate-only", action="store_true", help="Only check the scene, export nothing")
     p.add_argument("--skip-panoramas", action="store_true")
     p.add_argument("--skip-model", action="store_true")
+    p.add_argument("--thumbnails-only", action="store_true", help="Re-render material thumbnails into an existing export")
     return p.parse_args(argv)
 
 
@@ -394,6 +396,110 @@ def export_glb(scene, cfg, out):
     return {"file": f"model/{cfg['id']}.glb", **info}
 
 
+def export_web_lighting(cfg, out):
+    """Copy a web-sized HDRI (1024x512 .hdr) per lighting preset and return the manifest block."""
+    presets = cfg.get("web_lighting") or {}
+    if not presets:
+        return None
+    env_dir = os.path.join(out, "environment")
+    os.makedirs(env_dir, exist_ok=True)
+    result = {}
+    for pid, p in presets.items():
+        entry = {k: v for k, v in p.items() if k != "hdri"}
+        stem = p.get("hdri")
+        if stem:
+            src = next((bpy.path.abspath(i.filepath) for i in bpy.data.images
+                        if i.source == "FILE" and stem in os.path.basename(i.filepath)), None)
+            img = None
+            try:
+                if src and os.path.isfile(src):
+                    img = bpy.data.images.load(src, check_existing=False)
+                else:
+                    img = next((i for i in bpy.data.images if stem in i.name or stem in i.filepath), None)
+                    img = img.copy() if img else None
+                if img is None:
+                    raise RuntimeError(f"HDRI '{stem}' not found in the scene")
+                img.scale(1024, 512)
+                dst = os.path.join(env_dir, f"{pid}.hdr")
+                img.filepath_raw = dst
+                img.file_format = "HDR"
+                img.save()
+                entry["env"] = f"environment/{pid}.hdr"
+            except Exception as e:
+                err(f"Web environment for '{pid}' failed: {e}")
+            finally:
+                if img is not None:
+                    bpy.data.images.remove(img)
+        result[pid] = entry
+    log(f"Web lighting presets: {', '.join(result)}")
+    return result
+
+
+def render_material_thumbnails(cfg, out, device_pref):
+    """Render a small Cycles sphere for every configurator choice -> thumbnails/materials/<material>.jpg"""
+    opts = cfg.get("material_options", [])
+    if not opts:
+        return {}
+    src_scene = bpy.context.scene
+    th = bpy.data.scenes.new("__ivz_material_thumbs")
+    th.render.engine = "CYCLES"
+    setup_cycles(th, device_pref, 48)
+    th.render.resolution_x = th.render.resolution_y = 256
+    th.render.resolution_percentage = 100
+    th.render.image_settings.file_format = "JPEG"
+    th.render.image_settings.quality = 85
+    th.render.use_file_extension = True
+    th.world = src_scene.world
+    try:
+        th.view_settings.view_transform = src_scene.view_settings.view_transform
+        th.view_settings.look = src_scene.view_settings.look
+        th.view_settings.exposure = float(cfg.get("thumbnail_exposure", 0.0))
+    except Exception:
+        pass
+    me = bpy.data.meshes.new("__ivz_thumb_sphere")
+    bm = bmesh.new()
+    uvl = bm.loops.layers.uv.verify()  # create the UV layer first so calc_uvs fills it
+    bmesh.ops.create_uvsphere(bm, u_segments=64, v_segments=32, radius=0.5, calc_uvs=True)
+    for f in bm.faces:
+        f.smooth = True
+        for lp in f.loops:  # UVs in real metres (1 m sphere) so textures show at true scale, like in the scene
+            u, v = lp[uvl].uv
+            lp[uvl].uv = (u * math.pi, v * math.pi / 2)
+    bm.to_mesh(me); bm.free()
+    sph = bpy.data.objects.new("__ivz_thumb_sphere", me); th.collection.objects.link(sph)
+    cd = bpy.data.cameras.new("__ivz_thumb_cam"); cd.lens = 70
+    cam = bpy.data.objects.new("__ivz_thumb_cam", cd); th.collection.objects.link(cam)
+    cam.location = (0, -2.4, 0.35); cam.rotation_euler = (math.radians(82), 0, 0); th.camera = cam
+    ld = bpy.data.lights.new("__ivz_thumb_key", "AREA"); ld.energy = 60; ld.size = 1.5
+    key = bpy.data.objects.new("__ivz_thumb_key", ld); th.collection.objects.link(key)
+    key.location = (-1.6, -1.6, 1.8); key.rotation_euler = (math.radians(50), 0, math.radians(-45))
+    tdir = os.path.join(out, "thumbnails", "materials"); os.makedirs(tdir, exist_ok=True)
+    done = {}
+    try:
+        for opt in opts:
+            for choice in opt.get("choices", []):
+                name = choice["material"]
+                if name in done or name not in bpy.data.materials:
+                    continue
+                me.materials.clear(); me.materials.append(bpy.data.materials[name])
+                stem = os.path.join(tdir, bpy.path.clean_name(name))
+                th.render.filepath = stem
+                try:
+                    bpy.ops.render.render(write_still=True, scene=th.name)
+                    if not file_ok(stem + ".jpg", 1000):
+                        raise RuntimeError("no image written")
+                    done[name] = f"thumbnails/materials/{bpy.path.clean_name(name)}.jpg"
+                except Exception as e:
+                    err(f"Material thumbnail '{name}' failed: {e}")
+    finally:
+        for o in (sph, cam, key):
+            bpy.data.objects.remove(o, do_unlink=True)
+        bpy.data.meshes.remove(me); bpy.data.cameras.remove(cd); bpy.data.lights.remove(ld)
+        bpy.data.scenes.remove(th)
+    log(f"Material thumbnails: {len(done)}")
+    return done
+
+
 def export_textures(out):
     tex_dir = os.path.join(out, "textures")
     os.makedirs(tex_dir, exist_ok=True)
@@ -447,6 +553,14 @@ def main():
               "started": datetime.datetime.now().isoformat(timespec="seconds")}
     if scene is None or errors or args.validate_only:
         return finish(out, report, None, started)
+    if args.thumbnails_only:
+        if not os.path.isfile(os.path.join(out, "manifest.json")):
+            err("--thumbnails-only needs an existing export (manifest.json) in the export folder")
+            return finish(out, report, None, started)
+        render_material_thumbnails(cfg, out, args.device)
+        log("Thumbnails re-rendered; manifest unchanged.")
+        report["thumbnails_only"] = True
+        return 1 if errors else 0
 
     bpy.context.window_manager  # ensure context
     width = args.resolution or int(cfg.get("panorama_width", 4096))
@@ -485,9 +599,22 @@ def main():
 
     model = None
     if not args.skip_model:
-        model = export_glb(scene, cfg, out)
+        # Collections the web model needs but the default render hides (e.g. interior lights for evening/night)
+        mcfg = cfg.get("model", {})
+        undo = apply_variant({"show_collections": mcfg.get("show_collections", []), "hide_collections": mcfg.get("hide_collections", [])})
+        try:
+            model = export_glb(scene, cfg, out)
+        finally:
+            undo()
 
     textures = export_textures(out)
+    web_lighting = export_web_lighting(cfg, out)
+    mat_thumbs = render_material_thumbnails(cfg, out, args.device) if cfg.get("material_options") else {}
+    materials = json.loads(json.dumps(cfg.get("material_options", [])))
+    for opt in materials:
+        for choice in opt.get("choices", []):
+            if choice["material"] in mat_thumbs:
+                choice["thumbnail"] = mat_thumbs[choice["material"]]
 
     manifest = {
         "schema": 1,
@@ -503,8 +630,9 @@ def main():
         "eye_height": float(cfg.get("eye_height", 1.6)),
         "views": views_out,
         "lighting": lighting,
-        "materials": cfg.get("material_options", []),
+        "materials": materials,
         "textures": textures,
+        "web_lighting": web_lighting,
         "environment": cfg.get("web_environment"),
     }
     return finish(out, report, manifest, started)
