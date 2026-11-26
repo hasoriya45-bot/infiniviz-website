@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://hasoriya45-bot.github.io/infiniviz-website/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=life-in-the-landscape</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=garden-house</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=framed-by-light</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=modern-residence</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=connected-homes</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=at-home-among-the-trees</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=room-to-focus</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=quietly-warm</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=everyday-elevated</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=gather-in-style</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=a-softer-retreat</loc><priority>0.7</priority></url>
+  <url><loc>https://hasoriya45-bot.github.io/infiniviz-website/project.html?p=room-for-living</loc><priority>0.7</priority></url>
 </urlset>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hasoriya45-bot.github.io/infiniviz-website/sitemap.xml
