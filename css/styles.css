@@ -439,6 +439,8 @@ button { cursor: pointer; }
 .va-btn--primary { background: var(--gold); color: #0d0d0c; border-color: var(--gold); }
 .va-btn--primary:hover { background: var(--ink); border-color: var(--ink); }
 .viewer:not(.is-idle) .viewer-activate { opacity: 0; visibility: hidden; }
+/* The concept-villa buttons only appear once that fallback viewer has loaded, so they never flash while the featured project loads. */
+.viewer:not(.is-ready) .viewer-activate { opacity: 0; visibility: hidden; }
 .viewer-fade { position: absolute; inset: 0; z-index: 6; background: #0a0a09; opacity: 0; pointer-events: none; transition: opacity .28s ease; }
 .viewer-fade.is-on { opacity: 1; }
 
@@ -772,8 +774,6 @@ a.channel:hover .arrow { transform: translate(4px, -4px); }
 @keyframes pv-indet { 0% { transform: scaleX(.05); } 50% { transform: scaleX(.6); } 100% { transform: scaleX(.05); } }
 .pv-fade { position: absolute; inset: 0; z-index: 6; background: #0a0a09; opacity: 0; pointer-events: none; transition: opacity .26s ease; }
 .pv-fade.is-on { opacity: 1; }
-.pv-activate { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 16px; background: radial-gradient(60% 60% at 50% 50%, rgba(10,10,9,.4), rgba(10,10,9,0)); transition: opacity .5s, visibility .5s; }
-.viewer.is-active .pv-activate { opacity: 0; visibility: hidden; }
 .viewer[data-mode="walk"] canvas, .viewer[data-mode="pano"] canvas { cursor: grab; }
 .viewer[data-mode="walk"] canvas:active, .viewer[data-mode="pano"] canvas:active { cursor: grabbing; }
 @media (max-width: 700px) {

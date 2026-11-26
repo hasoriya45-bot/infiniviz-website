@@ -62,13 +62,6 @@ export async function initProjectViewer(root, manifestUrl) {
   const hasMaterials = (manifest.materials || []).length > 0;
   root.insertAdjacentHTML('beforeend', `
     <div class="pv-fade" data-pv-fade aria-hidden="true"></div>
-    <div class="pv-activate">
-      <div class="va-actions">
-        <button class="va-btn va-btn--primary" type="button" data-pv-start="walk">Step inside</button>
-        <button class="va-btn" type="button" data-pv-start="pano">360° views</button>
-        <button class="va-btn" type="button" data-pv-start="orbit">Explore model</button>
-      </div>
-    </div>
     <div class="pv-ui">
       <div class="pv-top">
         <p class="pv-title"><b>${esc(manifest.title)}</b><span data-pv-viewname></span></p>
@@ -513,8 +506,7 @@ export async function initProjectViewer(root, manifestUrl) {
   }
   root.addEventListener('click', async (e) => {
     const t = e.target.closest('button'); if (!t || !root.contains(t)) return;
-    if (t.dataset.pvStart) { root.classList.add('is-active'); await setMode(t.dataset.pvStart); }
-    else if (t.dataset.pvMode) { root.classList.add('is-active'); await setMode(t.dataset.pvMode); }
+    if (t.dataset.pvMode) { root.classList.add('is-active'); await setMode(t.dataset.pvMode); }
     else if (t.dataset.pvView != null) { root.classList.add('is-active'); if (!mode) await setMode('pano', { viewIndex: +t.dataset.pvView }); else await goView(+t.dataset.pvView); }
     else if (t.dataset.pvPanel) { openPanel = openPanel === t.dataset.pvPanel ? null : t.dataset.pvPanel; renderPanel(); }
     else if (t.dataset.pvLight != null) { lightingIdx = +t.dataset.pvLight; renderPanel(); if (mode === 'pano') await showPanorama(current); }
@@ -533,6 +525,8 @@ export async function initProjectViewer(root, manifestUrl) {
   const pointers = new Map();
   let pinchStart = 0, fovStart = 75;
   canvas.addEventListener('pointerdown', (e) => {
+    // A mouse drag on the render means the visitor is using the viewer (touch keeps page scrolling until a button is used).
+    if (e.pointerType !== 'touch') root.classList.add('is-active');
     if (mode !== 'pano' && mode !== 'walk') return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     canvas.setPointerCapture(e.pointerId);
@@ -555,7 +549,8 @@ export async function initProjectViewer(root, manifestUrl) {
   const endPointer = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) pinchStart = 0; };
   canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
   canvas.addEventListener('wheel', (e) => {
-    if (mode !== 'pano' && mode !== 'walk') return;
+    // Until the visitor uses the viewer, the wheel scrolls the page instead of zooming.
+    if ((mode !== 'pano' && mode !== 'walk') || !root.classList.contains('is-active')) return;
     e.preventDefault();
     camera.fov = THREE.MathUtils.clamp(camera.fov + Math.sign(e.deltaY) * 4, 30, 95);
     camera.updateProjectionMatrix(); if (mode === 'pano') pano.fov = camera.fov; needsRender = true;
