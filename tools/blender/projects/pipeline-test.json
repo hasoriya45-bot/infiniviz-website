@@ -1,0 +1,37 @@
+{
+  "id": "pipeline-test",
+  "title": "Pipeline test room",
+  "description": "TEST FIXTURE - a plain box room used only to check that the export pipeline works. Never published.",
+  "test_fixture": true,
+  "eye_height": 1.6,
+  "panorama_width": 4096,
+  "panorama_jpeg_quality": 85,
+  "samples": 16,
+  "default_lighting_label": "Daylight",
+  "views": [
+    { "slug": "bed",        "label": "Bed view",          "camera": "CAM_01_Bed" },
+    { "slug": "entrance",   "label": "Room entrance",     "camera": "CAM_02_Entrance" },
+    { "slug": "wardrobe",   "label": "Wardrobe view",     "camera": "CAM_03_Wardrobe" },
+    { "slug": "tv-unit",    "label": "TV unit view",      "camera": "CAM_04_TV_Unit" },
+    { "slug": "window",     "label": "Window view",       "camera": "CAM_05_Window" },
+    { "slug": "seating",    "label": "Seating view",      "camera": "CAM_06_Seating" },
+    { "slug": "ceiling",    "label": "Ceiling view",      "camera": "CAM_07_Ceiling" },
+    { "slug": "bathroom",   "label": "Bathroom entrance", "camera": "CAM_08_Bathroom" },
+    { "slug": "full-room",  "label": "Full room view",    "camera": "CAM_09_Full_Room" }
+  ],
+  "model": { "draco": true, "image_format": "AUTO", "export_lights": true, "max_glb_mb": 80 },
+  "lighting_variants": [
+    { "id": "night", "label": "Night", "world": "World_Night", "show_collections": ["Night_Lights"] }
+  ],
+  "material_options": [
+    {
+      "label": "Wall finish",
+      "target_material": "Wall_Paint",
+      "choices": [
+        { "label": "Warm white", "material": "Wall_Paint" },
+        { "label": "Sage", "material": "Wall_Paint_Sage" }
+      ]
+    }
+  ],
+  "web_environment": null
+}

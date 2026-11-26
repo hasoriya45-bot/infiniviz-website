@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <title>INFINIVIZ test frame</title>
+  <style>html, body { margin: 0; background: #2a2a2a; } iframe { border: 0; display: block; }</style>
+</head>
+<body>
+  <!-- Used by tools/test-site.ps1: loads the site at an exact phone width (headless browsers cannot shrink their window below ~480 px). -->
+  <iframe id="f" title="Site under test"></iframe>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const w = +q.get('w') || 390, h = +q.get('h') || 844, mode = q.get('mode') || 'selftest';
+    const f = document.getElementById('f');
+    f.style.width = w + 'px'; f.style.height = h + 'px';
+    f.src = '../?' + (mode === 'selftest' ? 'selftest=1' : 'shot=1') + (q.get('hash') ? '#' + q.get('hash') : '');
+    if (mode === 'selftest') {
+      const iv = setInterval(() => {
+        try {
+          const pre = f.contentDocument && f.contentDocument.getElementById('ivz-selftest');
+          if (pre) {
+            clearInterval(iv);
+            const out = document.createElement('pre');
+            out.id = 'ivz-selftest'; out.hidden = true; out.textContent = pre.textContent;
+            document.body.appendChild(out);
+          }
+        } catch (e) { /* not ready yet */ }
+      }, 250);
+    }
+  </script>
+</body>
+</html>

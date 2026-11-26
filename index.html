@@ -32,7 +32,8 @@
   <script type="importmap">
     { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+      "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.8/build/index.module.js"
     } }
   </script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -63,7 +64,7 @@
 
   <div class="intro" id="intro" aria-hidden="true"><img src="assets/infiniviz-full-logo.png" alt="" width="950" height="958"></div>
   <script>
-    try { if (sessionStorage.getItem('ivz-intro')) document.getElementById('intro').hidden = true; else sessionStorage.setItem('ivz-intro', '1'); } catch (e) {}
+    try { if (sessionStorage.getItem('ivz-intro') || /[?&](shot|selftest)=/.test(location.search)) document.getElementById('intro').hidden = true; else sessionStorage.setItem('ivz-intro', '1'); } catch (e) {}
   </script>
 
   <header class="site-header" data-header>
@@ -280,7 +281,7 @@
             <p class="eyebrow">04 — Interactive 3D Experience</p>
             <h2 class="h2" id="exp-title">Step inside. <em>Look around.</em></h2>
           </div>
-          <p class="lead" data-reveal>A live, real-time rendered villa, not a video. Walk through the rooms in first person, orbit around the building, change the time of day, or cut a section through it.</p>
+          <p class="lead" data-reveal data-exp-lead>A live, real-time rendered villa, not a video. Walk through the rooms in first person, orbit around the building, change the time of day, or cut a section through it.</p>
         </div>
 
         <div class="viewer is-idle" data-viewer data-reveal>
@@ -345,7 +346,7 @@
 
         <dl class="viewer-meta" data-reveal>
           <div><dt>Controls</dt><dd>Inside: drag to look, click the floor or use WASD to walk. Outside: drag to rotate, scroll to zoom, right-drag to pan.</dd></div>
-          <div><dt>The model</dt><dd>A concept villa modelled in code for this demo. It is not a client project.</dd></div>
+          <div><dt>The model</dt><dd data-exp-model>A concept villa modelled in code for this demo. It is not a client project.</dd></div>
           <div><dt>For your project</dt><dd>We build the same kind of experience from your own CAD/BIM model, optimised for the web.</dd></div>
         </dl>
 

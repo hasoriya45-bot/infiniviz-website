@@ -1,0 +1,12 @@
+# Source and intermediate files never go to the public website
+*.blend
+*.blend1
+*.blend@
+exports/
+infiniviz-exports/
+infiniviz-backups/
+infiniviz-test-results/
+*.exr
+*.hdr.tmp
+Thumbs.db
+desktop.ini

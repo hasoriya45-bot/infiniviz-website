@@ -9,7 +9,8 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
 const gsap = window.gsap;
 const ScrollTrigger = window.ScrollTrigger;
-const canAnimate = !!(gsap && ScrollTrigger) && !reduceMotion;
+const SHOT_MODE = /[?&](shot|selftest)=/.test(location.search); // automated screenshots/tests: no intro or reveal animations
+const canAnimate = !!(gsap && ScrollTrigger) && !reduceMotion && !SHOT_MODE;
 let lenis = null;
 
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -18,7 +19,7 @@ export const whatsappUrl = (text = CONFIG.whatsappMessage) =>
 
 /* ---------------- Smooth scroll ---------------- */
 function initSmoothScroll() {
-  if (reduceMotion || typeof window.Lenis !== 'function') return;
+  if (reduceMotion || SHOT_MODE || typeof window.Lenis !== 'function') return;
   lenis = new window.Lenis({ duration: 1.15, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
   if (gsap && ScrollTrigger) {
     lenis.on('scroll', ScrollTrigger.update);
@@ -249,21 +250,105 @@ function initExperiences() {
 }
 
 /* ---------------- 3D viewer (lazy) ---------------- */
+/**
+ * Section 04 shows the project marked "featured" in experiences/registry.json
+ * (written by tools/sync-assets.ps1 from a real Blender export). Without one, it
+ * falls back to the built-in concept villa so the section never breaks.
+ */
+async function featuredManifest() {
+  try {
+    const r = await fetch('experiences/registry.json', { cache: 'no-cache' });
+    if (!r.ok) return null;
+    const reg = await r.json();
+    const p = (reg.projects || []).find((x) => x.id === reg.featured);
+    if (!p) return null;
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+    if (p.test_fixture && !local) return null; // test fixtures never show on the live site
+    return p.manifest;
+  } catch { return null; }
+}
+
+let startViewer = () => Promise.resolve();
 function initViewerLazy() {
   const el = $('[data-viewer]');
   if (!el) return;
-  let started = false;
-  const start = () => {
-    if (started) return; started = true;
-    import('./viewer.js')
-      .then((m) => m.initViewer(el))
-      .catch((err) => {
-        console.warn('3D viewer could not load:', err);
-        el.classList.add('is-fallback');
-      });
+  let started = null;
+  const loadVilla = () => import('./viewer.js').then((m) => m.initViewer(el));
+  startViewer = () => {
+    if (started) return started;
+    started = (async () => {
+      const manifest = await featuredManifest();
+      if (manifest) {
+        try { return await (await import('./project-viewer.js')).initProjectViewer(el, manifest); }
+        catch (err) {
+          console.warn('Project viewer could not load:', err);
+          if (!el.classList.contains('is-project')) return loadVilla();
+          el.classList.add('is-fallback');
+          el.dataset.status = 'error';
+          return null;
+        }
+      }
+      return loadVilla();
+    })().catch((err) => {
+      console.warn('3D viewer could not load:', err);
+      el.classList.add('is-fallback');
+      el.dataset.status = 'error';
+    });
+    return started;
   };
-  const io = new IntersectionObserver((en) => { if (en.some((e) => e.isIntersecting)) { start(); io.disconnect(); } }, { rootMargin: '600px 0px' });
+  const io = new IntersectionObserver((en) => { if (en.some((e) => e.isIntersecting)) { startViewer(); io.disconnect(); } }, { rootMargin: '600px 0px' });
   io.observe(el);
+}
+
+/* ---------------- Self-test (?selftest=1), used by tools/test-site.ps1 ---------------- */
+const SELFTEST = new URLSearchParams(location.search).has('selftest');
+const selftestErrors = [];
+if (SELFTEST) {
+  addEventListener('error', (e) => selftestErrors.push(`error: ${e.message} @ ${(e.filename || '').split('/').pop()}:${e.lineno}`));
+  addEventListener('unhandledrejection', (e) => selftestErrors.push(`unhandled: ${e.reason?.message || e.reason}`));
+  const ce = console.error.bind(console);
+  console.error = (...a) => { selftestErrors.push(`console.error: ${a.map(String).join(' ').slice(0, 300)}`); ce(...a); };
+}
+async function runSelftest() {
+  const res = { url: location.href, viewport: [innerWidth, innerHeight], failures: [], errors: selftestErrors, checks: {}, viewer: {} };
+  const fail = (m) => res.failures.push(m);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  try {
+    for (const id of ['top', 'about', 'services', 'work', 'experience', 'process', 'contact', 'location']) if (!document.getElementById(id)) fail(`section #${id} missing`);
+    res.checks.projectCards = $$('.project-card').length;
+    if (res.checks.projectCards !== PROJECTS.length) fail(`expected ${PROJECTS.length} project cards, found ${res.checks.projectCards}`);
+    res.checks.overflowX = document.documentElement.scrollWidth - innerWidth;
+    if (res.checks.overflowX > 1) fail(`page is ${res.checks.overflowX}px wider than the screen`);
+    res.checks.whatsapp = !!$('a[href^="https://wa.me/"]');
+    res.checks.instagram = !!$('a[href*="instagram.com"]');
+    if (!res.checks.whatsapp) fail('WhatsApp link missing');
+    if (!res.checks.instagram) fail('Instagram link missing');
+    res.checks.bedroomTours = $$('[data-experiences] a[href*="github.io"]').length;
+
+    const el = $('[data-viewer]');
+    await startViewer();
+    for (let i = 0; i < 300 && !(el.dataset.status === 'ready' || el.dataset.status === 'error' || el.classList.contains('is-ready')); i++) await wait(100);
+    const api = el.__ivz;
+    if (api) {
+      res.viewer = { kind: 'project', ...api.status };
+      if (api.status.status !== 'ready') fail(`3D viewer status: ${api.status.status} ${el.dataset.detail || ''}`);
+      if (!(await api.loadAllPanoramas())) fail(`only ${api.status.panoramasLoaded} panoramas loaded`);
+      res.viewer.panoramasLoaded = api.status.panoramasLoaded;
+      res.viewer.modes = await api.testModes();
+      Object.entries(res.viewer.modes).forEach(([m, ok]) => { if (!ok) fail(`mode ${m} failed`); });
+      res.viewer.collision = await api.testCollision();
+      res.viewer.collision.problems.forEach((p) => fail(`collision: ${p}`));
+      res.viewer.model = api.status.model;
+    } else {
+      res.viewer = { kind: 'concept-villa', status: el.classList.contains('is-ready') ? 'ready' : (el.classList.contains('is-fallback') ? 'fallback' : 'not ready'), views: 0, panoramasLoaded: 0 };
+      if (res.viewer.status !== 'ready') fail(`concept villa viewer: ${res.viewer.status}`);
+    }
+  } catch (e) { fail(`self-test crashed: ${e.message || e}`); }
+  selftestErrors.forEach((e) => fail(e));
+  const pre = document.createElement('pre');
+  pre.id = 'ivz-selftest'; pre.hidden = true; pre.textContent = JSON.stringify(res);
+  document.body.appendChild(pre);
+  root.dataset.selftest = 'done';
 }
 
 /* ---------------- Point field (from the original site) ---------------- */
@@ -465,6 +550,7 @@ function boot() {
   }
   initCursor();
   initAnimations();
+  if (SELFTEST && page === 'home') runSelftest();
 }
 
 if (page === 'project') {
