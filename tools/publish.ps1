@@ -8,39 +8,43 @@ With -Publish: runs all tests; if anything fails it STOPS before committing. Oth
 pushes to the existing remote/branch, waits for the GitHub Pages deployment and checks the live files.
 Credentials are handled by Git Credential Manager; no tokens are stored or printed.
 #>
-param([switch]$Publish, [string]$Message = '', [switch]$SkipTests)
+param([switch]$Publish, [string]$Message = '', [switch]$SkipTests, [switch]$VerifyOnly)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lib\checks.ps1')
 $git = (Get-Command git -ErrorAction SilentlyContinue).Source
 if (-not $git) { $git = 'C:\Program Files\Git\cmd\git.exe' }
+# Git writes normal progress to stderr; never let that count as a PowerShell error. Use the exit code instead.
+function Invoke-Git { $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'; try { & $git @args 2>&1 | ForEach-Object { "$_" } } finally { $ErrorActionPreference = $prev } }
 Push-Location $repo
 try {
+  if ($VerifyOnly) { $SkipTests = $true }
   if (-not $SkipTests) {
     & (Join-Path $PSScriptRoot 'test-site.ps1')
     if ($LASTEXITCODE -ne 0) { Write-Host "`nNOT PUBLISHED: tests failed. Fix the problems above and run again." -ForegroundColor Red; exit 1 }
   }
   $branch = (& $git rev-parse --abbrev-ref HEAD).Trim()
   $remote = (& $git remote get-url origin).Trim()
-  $changes = & $git status --porcelain
   Write-Host "`nRepository: $remote  (branch $branch)"
-  if (-not $changes) { Write-Host 'Nothing to publish - the working tree matches the last commit.' -ForegroundColor Yellow; exit 0 }
-  Write-Host "Changes to publish:"; $changes | ForEach-Object { Write-Host "  $_" }
-  & $git diff --stat | Select-Object -Last 1
-  if (-not $Publish) { Write-Host "`nDRY RUN - nothing committed. Re-run with -Publish to commit and push." -ForegroundColor Yellow; exit 0 }
+  if (-not $VerifyOnly) {
+    $changes = & $git status --porcelain
+    if (-not $changes) { Write-Host 'Nothing to publish - the working tree matches the last commit.' -ForegroundColor Yellow; exit 0 }
+    Write-Host "Changes to publish:"; $changes | ForEach-Object { Write-Host "  $_" }
+    if (-not $Publish) { Write-Host "`nDRY RUN - nothing committed. Re-run with -Publish to commit and push." -ForegroundColor Yellow; exit 0 }
 
-  if (-not $Message) { $Message = "Update website ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))" }
-  & $git add -A
-  $msgFile = Join-Path $env:TEMP "infiniviz-commit-$PID.txt"
-  [IO.File]::WriteAllText($msgFile, ($Message -replace "`r`n", "`n"), (New-Object Text.UTF8Encoding $false))
-  & $git commit -q -F $msgFile
-  $commitCode = $LASTEXITCODE
-  Remove-Item $msgFile -ErrorAction SilentlyContinue
-  if ($commitCode -ne 0) { throw 'git commit failed' }
+    if (-not $Message) { $Message = "Update website ($(Get-Date -Format 'yyyy-MM-dd HH:mm'))" }
+    Invoke-Git add -A | Out-Null
+    $msgFile = Join-Path $env:TEMP "infiniviz-commit-$PID.txt"
+    [IO.File]::WriteAllText($msgFile, ($Message -replace "`r`n", "`n"), (New-Object Text.UTF8Encoding $false))
+    Invoke-Git commit -q -F $msgFile | Out-Null
+    $commitCode = $LASTEXITCODE
+    Remove-Item $msgFile -ErrorAction SilentlyContinue
+    if ($commitCode -ne 0) { throw 'git commit failed' }
+    Write-Host "Committed $((& $git rev-parse --short HEAD).Trim()): $(($Message -split "`n")[0])"
+    Invoke-Git push origin $branch | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { throw 'git push failed (check the sign-in window / network)' }
+  }
   $sha = (& $git rev-parse HEAD).Trim()
-  Write-Host "Committed $($sha.Substring(0,7)): $Message"
-  & $git push origin $branch
-  if ($LASTEXITCODE -ne 0) { throw 'git push failed (check the sign-in window / network)' }
 
   # Wait for GitHub Pages to deploy this commit.
   $slug = ($remote -replace '\.git$', '') -replace '^https://github.com/', ''
@@ -57,7 +61,7 @@ try {
   # Verify the live files.
   $owner, $name = $slug.Split('/')
   $live = "https://$($owner.ToLower()).github.io/$name/"
-  $urls = @($live, "${live}js/main.js", "${live}css/styles.css")
+  $urls = @($live, "${live}js/main.js", "${live}js/project-viewer.js", "${live}js/viewer.js", "${live}css/styles.css", "${live}project.html")
   $regPath = Join-Path $repo 'experiences\registry.json'
   if (Test-Path $regPath) {
     $reg = Read-JsonFile $regPath
